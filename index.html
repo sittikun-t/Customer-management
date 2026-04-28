@@ -390,9 +390,9 @@ table tbody tr:hover td{background:#f0fff4!important;}
             <datalist id="prodList"><option value="ProGreat"><option value="กากเบียร์ (Bags)"><option value="ผงข้าวโอ๊ตแห้ง"></datalist></div>
           <div class="col-md-2"><label class="form-label">ราคา (บ./กก.)</label>
             <input type="number" id="f_price" class="form-control form-control-sm" step="0.05" oninput="autoAmt()"></div>
-          <div class="col-md-3"><label class="form-label">น้ำหนัก (กก.)</label>
-            <input type="number" id="f_wt" class="form-control form-control-sm" step="0.1" oninput="autoAmt()"></div>
-          <div class="col-md-3"><label class="form-label">ยอดชำระ (บาท) <small class="text-success">auto</small></label>
+          <div class="col-md-3"><label class="form-label">น้ำหนักสุทธิ (กก.) <small class="text-success">auto</small></label>
+            <input type="number" id="f_wt" class="form-control form-control-sm" step="0.01" oninput="autoAmt()"></div>
+          <div class="col-md-3"><label class="form-label">ยอดชำระสุทธิ (บาท) <small class="text-success">auto</small></label>
             <input type="number" id="f_amt" class="form-control form-control-sm" step="0.01"></div>
           <div class="col-md-4"><label class="form-label">วิธีชำระเงิน</label>
             <select id="f_method" class="form-select form-select-sm" onchange="onMethodChange()"></select>
@@ -400,6 +400,28 @@ table tbody tr:hover td{background:#f0fff4!important;}
               <input type="text" id="f_method_new" class="form-control form-control-sm" placeholder="พิมพ์วิธีชำระเงินใหม่...">
               <button type="button" class="btn btn-sm btn-outline-success px-2" onclick="confirmNewMethod()" title="บันทึกตัวเลือกใหม่"><i class="fa fa-check"></i></button>
               <button type="button" class="btn btn-sm btn-outline-secondary px-2" onclick="cancelNewMethod()" title="ยกเลิก"><i class="fa fa-times"></i></button>
+            </div>
+          </div>
+          <div class="col-12">
+            <div class="row g-2 p-2 rounded" style="background:#f6faf7;border:1px dashed #b6d7c0">
+              <div class="col-md-7">
+                <label class="form-label mb-1" style="color:#1a6b3a;font-weight:700"><i class="fa fa-balance-scale me-1"></i>รายละเอียดน้ำหนัก <small class="text-muted fw-normal">(ใส่น้ำหนักรวมและรายการหัก ระบบจะคำนวณน้ำหนักสุทธิให้)</small></label>
+                <div class="row g-2">
+                  <div class="col-3"><label class="form-label small mb-1">น้ำหนักรวม</label>
+                    <input type="number" id="f_wt_gross" class="form-control form-control-sm" step="0.1" placeholder="กก." oninput="recalcWtAmt()"></div>
+                  <div class="col-3"><label class="form-label small mb-1">หักกระสอบ</label>
+                    <input type="number" id="f_ded_sack" class="form-control form-control-sm" step="0.1" placeholder="กก." oninput="recalcWtAmt()"></div>
+                  <div class="col-3"><label class="form-label small mb-1">หักความชื้น</label>
+                    <input type="number" id="f_ded_moisture" class="form-control form-control-sm" step="0.1" placeholder="กก." oninput="recalcWtAmt()"></div>
+                  <div class="col-3"><label class="form-label small mb-1">หักทรายเกิน</label>
+                    <input type="number" id="f_ded_sand" class="form-control form-control-sm" step="0.1" placeholder="กก." oninput="recalcWtAmt()"></div>
+                </div>
+              </div>
+              <div class="col-md-5">
+                <label class="form-label mb-1" style="color:#bf6516;font-weight:700"><i class="fa fa-tag me-1"></i>ส่วนลด/หักค่าใช้จ่าย (บาท) <small class="text-muted fw-normal">(เช่น ค่าลงสินค้า)</small></label>
+                <input type="number" id="f_discount" class="form-control form-control-sm" step="0.01" placeholder="ระบุยอดส่วนลดที่หักจากยอดชำระ" oninput="recalcWtAmt()">
+                <small class="text-muted">สูตร: ยอดชำระสุทธิ = (น้ำหนักสุทธิ × ราคา) − ส่วนลด</small>
+              </div>
             </div>
           </div>
           <div class="col-md-4">
@@ -897,7 +919,7 @@ function openAddModal(){
   document.getElementById('mTitle').textContent='เพิ่มรายการใหม่';
   document.getElementById('delBtn').classList.add('d-none');
   document.getElementById('f_idx').value='';
-  ['f_id','f_cust','f_price','f_wt','f_amt','f_note'].forEach(id=>document.getElementById(id).value='');
+  ['f_id','f_cust','f_price','f_wt','f_amt','f_note','f_wt_gross','f_ded_sack','f_ded_moisture','f_ded_sand','f_discount'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
   document.getElementById('f_prod').value='ProGreat';
   renderMethodSelect('โอนเข้า บช. BBL 53035xxx');
   document.getElementById('f_method_new_wrap').style.display='none';
@@ -924,6 +946,11 @@ function openEdit(idx){
   document.getElementById('f_price').value=r.price||'';
   document.getElementById('f_wt').value=r.weight||'';
   document.getElementById('f_amt').value=r.amount||'';
+  document.getElementById('f_wt_gross').value=r.weightGross||'';
+  document.getElementById('f_ded_sack').value=r.dedSack||'';
+  document.getElementById('f_ded_moisture').value=r.dedMoisture||'';
+  document.getElementById('f_ded_sand').value=r.dedSand||'';
+  document.getElementById('f_discount').value=r.discount||'';
   renderMethodSelect(r.paymentMethod||'');
   document.getElementById('f_method_new_wrap').style.display='none';
   document.getElementById('f_due').value=r.dueDate||'';
@@ -934,10 +961,22 @@ function openEdit(idx){
   getModal().show();
 }
 
+function recalcWtAmt(){
+  const gross=parseFloat(document.getElementById('f_wt_gross').value);
+  const sack=parseFloat(document.getElementById('f_ded_sack').value)||0;
+  const moist=parseFloat(document.getElementById('f_ded_moisture').value)||0;
+  const sand=parseFloat(document.getElementById('f_ded_sand').value)||0;
+  if(!isNaN(gross)){
+    const net=gross-sack-moist-sand;
+    document.getElementById('f_wt').value=net.toFixed(2);
+  }
+  autoAmt();
+}
 function autoAmt(){
   const p=parseFloat(document.getElementById('f_price').value);
   const w=parseFloat(document.getElementById('f_wt').value);
-  if(!isNaN(p)&&!isNaN(w))document.getElementById('f_amt').value=(p*w).toFixed(2);
+  const disc=parseFloat(document.getElementById('f_discount').value)||0;
+  if(!isNaN(p)&&!isNaN(w))document.getElementById('f_amt').value=(p*w-disc).toFixed(2);
 }
 
 function doSave(){
@@ -951,6 +990,11 @@ function doSave(){
     price:parseFloat(document.getElementById('f_price').value)||0,
     weight:parseFloat(document.getElementById('f_wt').value)||0,
     amount:parseFloat(document.getElementById('f_amt').value)||0,
+    weightGross:parseFloat(document.getElementById('f_wt_gross').value)||0,
+    dedSack:parseFloat(document.getElementById('f_ded_sack').value)||0,
+    dedMoisture:parseFloat(document.getElementById('f_ded_moisture').value)||0,
+    dedSand:parseFloat(document.getElementById('f_ded_sand').value)||0,
+    discount:parseFloat(document.getElementById('f_discount').value)||0,
     paymentMethod:getMethodValue(),
     dueDate:document.getElementById('f_due').value.trim(),
     paymentDate:getDateFromSelects('f_pay'),
